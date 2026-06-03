@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/TBankAcquiringNet.MtlsExample/TBankAcquiringNet.MtlsExample.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/TBankAcquiringNet.SplitShops/TBankAcquiringNet.SplitShops.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TBankAcquiringNet.SplitShops.Tests/TBankAcquiringNet.SplitShops.Tests.csproj" />
+  </Folder>
+</Solution>

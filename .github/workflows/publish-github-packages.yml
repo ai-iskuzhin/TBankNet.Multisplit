@@ -1,0 +1,96 @@
+name: Publish GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: 'Git ref to publish from, for example main or v0.1.0-preview.1'
+        required: true
+        type: string
+      version:
+        description: 'Package version to publish, for example 0.1.0-preview.1'
+        required: true
+        type: string
+      package:
+        description: 'Package to publish'
+        required: true
+        type: choice
+        default: TBankAcquiringNet.Payments
+        options:
+          - TBankAcquiringNet.Payments
+          - TBankAcquiringNet.SplitShops
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Publish GitHub Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.git_ref }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore TBankAcquiringNet.slnx
+
+      - name: Build
+        run: dotnet build TBankAcquiringNet.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test TBankAcquiringNet.slnx --configuration Release --no-build --verbosity normal
+
+      - name: Resolve Package
+        id: package
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          case "$PACKAGE" in
+            TBankAcquiringNet.Payments)
+              echo "project=src/TBankAcquiringNet.Payments/TBankAcquiringNet.Payments.csproj" >> "$GITHUB_OUTPUT"
+              echo "id=TBankAcquiringNet.Payments" >> "$GITHUB_OUTPUT"
+              ;;
+            TBankAcquiringNet.SplitShops)
+              echo "project=src/TBankAcquiringNet.SplitShops/TBankAcquiringNet.SplitShops.csproj" >> "$GITHUB_OUTPUT"
+              echo "id=TBankAcquiringNet.SplitShops" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported package '$PACKAGE'" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Pack Requested Version
+        run: >
+          dotnet pack ${{ steps.package.outputs.project }}
+          --configuration Release
+          --no-build
+          --output artifacts/packages
+          -p:PackageVersion=${{ inputs.version }}
+          -p:Version=${{ inputs.version }}
+          -p:InformationalVersion=${{ inputs.version }}
+
+      - name: Add GitHub Packages Source
+        run: >
+          dotnet nuget add source
+          --username "${{ github.actor }}"
+          --password "${{ secrets.GITHUB_TOKEN }}"
+          --store-password-in-clear-text
+          --name github
+          "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+      - name: Publish Package
+        run: >
+          dotnet nuget push artifacts/packages/${{ steps.package.outputs.id }}.${{ inputs.version }}.nupkg
+          --source github
+          --api-key "${{ secrets.GITHUB_TOKEN }}"
+          --skip-duplicate
