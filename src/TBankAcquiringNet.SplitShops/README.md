@@ -1,6 +1,6 @@
 # TBankAcquiringNet.SplitShops
 
-Dependency-light .NET SDK package for T-Bank Multisplit provider shop registration and updates.
+.NET SDK package for T-Bank Multisplit provider shop registration and updates.
 
 ## Install
 
