@@ -6,6 +6,7 @@ namespace TBankAcquiringNet.SplitShops;
 /// Ответ OAuth-авторизации для API регистрации точек T-Bank Split
 /// </summary>
 public sealed record TBankSplitShopsTokenResponse
+    : ITBankSplitShopsResponse<TBankSplitShopsTokenResponse>
 {
     /// <summary>Access token для заголовка Authorization: Bearer.</summary>
     [JsonPropertyName("access_token")]
@@ -29,7 +30,23 @@ public sealed record TBankSplitShopsTokenResponse
     /// <summary>Идентификатор токена.</summary>
     public string? Jti { get; init; }
 
+    /// <summary>
+    /// Момент истечения токена, рассчитанный клиентом из <see cref="ExpiresIn"/>.
+    /// </summary>
+    /// <remarks>
+    /// Само по себе <c>expires_in</c> — длительность без точки отсчёта, и кэшировать по ней нечего.
+    /// Клиент отсчитывает срок от момента отправки запроса.
+    /// </remarks>
+    [JsonIgnore]
+    public DateTimeOffset? ExpiresAt { get; init; }
+
     /// <summary>HTTP-метаданные ответа.</summary>
     [JsonIgnore]
     public TBankSplitShopsResponseMetadata? Metadata { get; init; }
+
+    /// <summary>Токен в виде, который принимают методы клиента.</summary>
+    public TBankSplitShopsAccessToken ToAccessToken() => new(AccessToken, ExpiresAt);
+
+    TBankSplitShopsTokenResponse ITBankSplitShopsResponse<TBankSplitShopsTokenResponse>.WithMetadata(
+        TBankSplitShopsResponseMetadata metadata) => this with { Metadata = metadata };
 }

@@ -32,13 +32,60 @@ var client = new TBankSplitShopsClient(httpClient, new TBankSplitShopsClientOpti
     Environment = TBankSplitShopsEnvironment.Test
 });
 
-var shop = await client.GetShopAsync("111111111");
+// The SDK issues tokens; it does not hold them. Cache and refresh where you know how many
+// requests share one credential.
+var token = (await client.GetAccessTokenAsync()).ToAccessToken();
+
+var shop = await client.GetShopAsync("111111111", token);
 
 Console.WriteLine(shop.Name);
 Console.WriteLine(shop.BankAccount?.Bik);
 ```
 
-Production access to `acqapi.tinkoff.ru` may require mTLS certificates and IP allow-listing according to T-Bank registration API requirements.
+Set exactly one of `Environment` or `BaseAddress` — they name the same thing, and setting both is rejected rather than silently resolved. There is no default: the API host is never assumed.
+
+## Access Tokens
+
+`GetAccessTokenAsync` is the only call that talks to `/oauth/token`. Every other method takes the
+token you pass it, so one token serves many calls and the refresh policy stays yours:
+
+```csharp
+private TBankSplitShopsAccessToken cached;
+
+private async Task<TBankSplitShopsAccessToken> GetTokenAsync(CancellationToken ct)
+{
+    if (cached.IsExpired())
+    {
+        cached = (await client.GetAccessTokenAsync(ct)).ToAccessToken();
+    }
+
+    return cached;
+}
+```
+
+`ExpiresAt` is computed from `expires_in` against the moment the request was sent, so it is never
+optimistic. When the bank reports no lifetime it stays `null` and `IsExpired()` returns `false` —
+better a 401 you can retry than a working token thrown away on a guess.
+
+## TLS
+
+T-Bank serves `*.tinkoff.ru` from the Russian Trusted CA (Минцифры), whose root ships in no common
+OS or container image. A default `HttpClient` fails the handshake with `UntrustedRoot` before any
+request is sent. Either install the root into the system store, or supply an `HttpClient` that
+trusts it:
+
+```csharp
+using TBankAcquiringNet;
+
+var handler = new SocketsHttpHandler();
+handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, chain, errors) =>
+    TBankServerCertificateValidator.RussianTrustedCa.Validate(
+        null, certificate as X509Certificate2, chain, errors);
+
+using var httpClient = new HttpClient(handler);
+```
+
+Production access to `acqapi.tinkoff.ru` may also require mTLS client certificates and IP allow-listing according to T-Bank registration API requirements.
 
 ## Registration
 

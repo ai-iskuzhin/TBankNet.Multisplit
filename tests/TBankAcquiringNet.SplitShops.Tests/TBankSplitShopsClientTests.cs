@@ -44,7 +44,6 @@ public sealed class TBankSplitShopsClientTests
     public async Task RegisterShopAsync_GetsTokenAndPostsJsonToRegisterEndpoint()
     {
         using var handler = new QueueingHandler();
-        handler.Enqueue("""{"access_token":"access-token","token_type":"bearer"}""");
         handler.Enqueue("""
             {
               "code": "test_tochka",
@@ -55,14 +54,13 @@ public sealed class TBankSplitShopsClientTests
         using var httpClient = new HttpClient(handler);
         var client = CreateClient(httpClient);
 
-        var response = await client.RegisterShopAsync(CreateRegisterRequest());
+        var response = await client.RegisterShopAsync(CreateRegisterRequest(), TestAccessToken);
 
         Assert.Equal("test_tochka", response.Code);
         Assert.Equal("111111111", response.ShopCode);
         Assert.Empty(response.Terminals);
 
-        Assert.Equal(2, handler.Requests.Count);
-        var request = handler.Requests[1];
+        var request = Assert.Single(handler.Requests);
         Assert.Equal(HttpMethod.Post, request.Method);
         Assert.Equal("https://example.test/sm-register/register", request.RequestUri?.ToString());
         Assert.Equal("Bearer", request.Authorization?.Scheme);
@@ -87,7 +85,6 @@ public sealed class TBankSplitShopsClientTests
     public async Task GetShopAsync_GetsTokenAndParsesShopInfo()
     {
         using var handler = new QueueingHandler();
-        handler.Enqueue("""{"access_token":"access-token","token_type":"bearer"}""");
         handler.Enqueue("""
             {
               "merchantIds": [1000000000000, 1000000000001],
@@ -122,7 +119,7 @@ public sealed class TBankSplitShopsClientTests
         using var httpClient = new HttpClient(handler);
         var client = CreateClient(httpClient);
 
-        var response = await client.GetShopAsync("111111111");
+        var response = await client.GetShopAsync("111111111", TestAccessToken);
 
         Assert.Equal("OOO Moya kompaniya", response.Name);
         Assert.Equal([1000000000000, 1000000000001], response.MerchantIds);
@@ -134,7 +131,7 @@ public sealed class TBankSplitShopsClientTests
         Assert.Equal(0, response.BankAccount?.UserDefinedFees[0].Rule?.OperationType);
         Assert.Equal("6012", response.PaymentSystemAttributes[0].Mcc);
 
-        var request = handler.Requests[1];
+        var request = Assert.Single(handler.Requests);
         Assert.Equal(HttpMethod.Get, request.Method);
         Assert.Equal("https://example.test/sm-register/register/shop/111111111", request.RequestUri?.ToString());
         Assert.Equal("Bearer", request.Authorization?.Scheme);
@@ -146,7 +143,6 @@ public sealed class TBankSplitShopsClientTests
     public async Task UpdateShopAsync_GetsTokenAndSendsPatchRequest()
     {
         using var handler = new QueueingHandler();
-        handler.Enqueue("""{"access_token":"access-token","token_type":"bearer"}""");
         handler.Enqueue("""
             {
               "code": "test_tochka",
@@ -170,11 +166,11 @@ public sealed class TBankSplitShopsClientTests
                 Details = "Перевод средств",
                 DisableReimbursement = true
             }
-        });
+        }, TestAccessToken);
 
         Assert.Equal("111111111", response.ShopCode);
 
-        var request = handler.Requests[1];
+        var request = Assert.Single(handler.Requests);
         Assert.Equal(HttpMethod.Patch, request.Method);
         Assert.Equal("https://example.test/sm-register/register/111111111", request.RequestUri?.ToString());
         Assert.Equal("Bearer", request.Authorization?.Scheme);
@@ -192,7 +188,6 @@ public sealed class TBankSplitShopsClientTests
     public async Task RegisterShopAsync_ThrowsApiExceptionForValidationErrorResponse()
     {
         using var handler = new QueueingHandler();
-        handler.Enqueue("""{"access_token":"access-token","token_type":"bearer"}""");
         handler.Enqueue("""
             {
               "timestamp": "2018-07-25T13:23:18.160+0000",
@@ -214,7 +209,7 @@ public sealed class TBankSplitShopsClientTests
         var client = CreateClient(httpClient);
 
         var exception = await Assert.ThrowsAsync<TBankSplitShopsApiException>(
-            () => client.RegisterShopAsync(CreateRegisterRequest()));
+            () => client.RegisterShopAsync(CreateRegisterRequest(), TestAccessToken));
 
         Assert.Equal(HttpStatusCode.BadRequest, exception.HttpStatusCode);
         Assert.Equal("Validation failed", exception.ErrorResponse?.Message);
@@ -242,10 +237,147 @@ public sealed class TBankSplitShopsClientTests
         };
 
         var exception = await Assert.ThrowsAsync<TBankSplitShopsValidationException>(
-            () => client.RegisterShopAsync(request));
+            () => client.RegisterShopAsync(request, TestAccessToken));
 
         Assert.Equal("KBK and OKTMO must be provided together.", exception.Message);
     }
+
+    [Fact]
+    public async Task RegisterShopAsync_ValidatesBillingDescriptorLengthBeforeSending()
+    {
+        using var httpClient = new HttpClient(new QueueingHandler());
+        var client = CreateClient(httpClient);
+        var request = CreateRegisterRequest() with
+        {
+            BillingDescriptor = "megaprokat-test" // 15 chars, max is 14
+        };
+
+        var exception = await Assert.ThrowsAsync<TBankSplitShopsValidationException>(
+            () => client.RegisterShopAsync(request, TestAccessToken));
+
+        Assert.Equal("Billing descriptor size must be between 1 and 14.", exception.Message);
+    }
+
+    [Fact]
+    public async Task GetAccessTokenAsync_StampsExpiryFromExpiresIn()
+    {
+        using var handler = new QueueingHandler();
+        handler.Enqueue("""{"access_token":"access-token","token_type":"bearer","expires_in":43199}""");
+        using var httpClient = new HttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        var before = DateTimeOffset.UtcNow;
+        var response = await client.GetAccessTokenAsync();
+
+        // expires_in on its own is a duration with no origin; the caller can only cache against an
+        // absolute moment, counted from when the request went out.
+        Assert.NotNull(response.ExpiresAt);
+        Assert.InRange(
+            response.ExpiresAt!.Value,
+            before.AddSeconds(43199),
+            DateTimeOffset.UtcNow.AddSeconds(43199));
+
+        Assert.False(response.ToAccessToken().IsExpired());
+    }
+
+    [Fact]
+    public async Task GetAccessTokenAsync_LeavesExpiryUnsetWhenBankOmitsIt()
+    {
+        using var handler = new QueueingHandler();
+        handler.Enqueue("""{"access_token":"access-token","token_type":"bearer"}""");
+        using var httpClient = new HttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        var response = await client.GetAccessTokenAsync();
+
+        Assert.Null(response.ExpiresAt);
+        // Nothing was said about the lifetime, so discarding a working token on a guess would be worse.
+        Assert.False(response.ToAccessToken().IsExpired());
+    }
+
+    [Fact]
+    public void AccessToken_IsExpired_RespectsLeeway()
+    {
+        var token = new TBankSplitShopsAccessToken("access-token", DateTimeOffset.UtcNow.AddSeconds(30));
+
+        Assert.False(token.IsExpired(TimeSpan.FromSeconds(5)));
+        Assert.True(token.IsExpired(TimeSpan.FromMinutes(1)));
+    }
+
+    [Fact]
+    public void AccessToken_ToString_DoesNotLeakTheValue()
+    {
+        var token = new TBankSplitShopsAccessToken("super-secret");
+
+        Assert.DoesNotContain("super-secret", token.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RegisterShopAsync_RejectsAnEmptyToken()
+    {
+        using var handler = new QueueingHandler();
+        using var httpClient = new HttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        var exception = await Assert.ThrowsAsync<TBankSplitShopsValidationException>(
+            () => client.RegisterShopAsync(CreateRegisterRequest(), default));
+
+        Assert.Contains("GetAccessTokenAsync", exception.Message, StringComparison.Ordinal);
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
+    public void Options_RejectBothEnvironmentAndBaseAddress()
+    {
+        using var httpClient = new HttpClient();
+
+        // Both used to be accepted, with BaseAddress silently winning — so Environment = Test beside a
+        // production BaseAddress looked configured and talked to production.
+        var exception = Assert.Throws<ArgumentException>(() => new TBankSplitShopsClient(
+            httpClient,
+            new TBankSplitShopsClientOptions
+            {
+                Username = "login",
+                Password = "password",
+                Environment = TBankSplitShopsEnvironment.Test,
+                BaseAddress = new Uri("https://acqapi.tinkoff.ru/")
+            }));
+
+        Assert.Contains("not both", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Options_RejectNeitherEnvironmentNorBaseAddress()
+    {
+        using var httpClient = new HttpClient();
+
+        // Production is never assumed: the old default silently registered real shops.
+        Assert.Throws<ArgumentException>(() => new TBankSplitShopsClient(
+            httpClient,
+            new TBankSplitShopsClientOptions { Username = "login", Password = "password" }));
+    }
+
+    [Theory]
+    [InlineData(TBankSplitShopsEnvironment.Test, "https://acqapi-test.tinkoff.ru/oauth/token")]
+    [InlineData(TBankSplitShopsEnvironment.Production, "https://acqapi.tinkoff.ru/oauth/token")]
+    public async Task Options_ResolveEnvironmentToItsHost(TBankSplitShopsEnvironment environment, string expected)
+    {
+        using var handler = new QueueingHandler();
+        handler.Enqueue("""{"access_token":"access-token","token_type":"bearer"}""");
+        using var httpClient = new HttpClient(handler);
+        var client = new TBankSplitShopsClient(httpClient, new TBankSplitShopsClientOptions
+        {
+            Username = "login",
+            Password = "password",
+            Environment = environment
+        });
+
+        await client.GetAccessTokenAsync();
+
+        Assert.Equal(expected, Assert.Single(handler.Requests).RequestUri?.ToString());
+    }
+
+    private static readonly TBankSplitShopsAccessToken TestAccessToken = new("access-token");
 
     private static TBankSplitShopsClient CreateClient(HttpClient httpClient)
     {

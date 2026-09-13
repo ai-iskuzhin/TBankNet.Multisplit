@@ -303,6 +303,7 @@ public sealed record TBankShopBankAccountUpdate
 /// Ответ регистрации или обновления точки партнера.
 /// </summary>
 public sealed record TBankShopMutationResponse
+    : ITBankSplitShopsResponse<TBankShopMutationResponse>
 {
     /// <summary>Код точки на стороне партнера.</summary>
     public string? Code { get; init; }
@@ -317,6 +318,9 @@ public sealed record TBankShopMutationResponse
     /// <summary>HTTP-метаданные ответа.</summary>
     [JsonIgnore]
     public TBankSplitShopsResponseMetadata? Metadata { get; init; }
+
+    TBankShopMutationResponse ITBankSplitShopsResponse<TBankShopMutationResponse>.WithMetadata(
+        TBankSplitShopsResponseMetadata metadata) => this with { Metadata = metadata };
 }
 
 /// <summary>
@@ -333,6 +337,7 @@ public sealed record TBankShopTerminal
 /// Ответ получения информации по точке.
 /// </summary>
 public sealed record TBankShopInfoResponse
+    : ITBankSplitShopsResponse<TBankShopInfoResponse>
 {
     /// <summary>Идентификаторы агрегированных мерчантов.</summary>
     public IReadOnlyList<long> MerchantIds { get; init; } = [];
@@ -370,6 +375,9 @@ public sealed record TBankShopInfoResponse
     /// <summary>HTTP-метаданные ответа.</summary>
     [JsonIgnore]
     public TBankSplitShopsResponseMetadata? Metadata { get; init; }
+
+    TBankShopInfoResponse ITBankSplitShopsResponse<TBankShopInfoResponse>.WithMetadata(
+        TBankSplitShopsResponseMetadata metadata) => this with { Metadata = metadata };
 }
 
 /// <summary>

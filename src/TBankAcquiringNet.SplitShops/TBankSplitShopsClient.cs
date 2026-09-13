@@ -17,6 +17,7 @@ public sealed class TBankSplitShopsClient
 
     private readonly HttpClient httpClient;
     private readonly TBankSplitShopsClientOptions options;
+    private readonly Uri baseAddress;
 
     /// <summary>
     /// Создает клиент API регистрации точек T-Bank Split
@@ -38,14 +39,32 @@ public sealed class TBankSplitShopsClient
 
         this.httpClient = httpClient;
         this.options = options;
+
+        // Resolved once, at construction: a bad host is a configuration mistake and should surface
+        // when the client is built, not on the first call that happens to need it.
+        baseAddress = options.ResolveBaseAddress();
     }
 
     /// <summary>
-    /// Получает OAuth access_token для методов регистрации и обновления точек.
+    /// Выпускает OAuth access_token для методов регистрации и обновления точек.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Единственное место, где SDK обращается к <c>oauth/token</c>. Остальные методы токен только
+    /// принимают: хранение, продление и разделение между запросами — дело вызывающей стороны.
+    /// </para>
+    /// <para>
+    /// Раньше каждый вызов начинался со скрытого получения токена, то есть стоил два обращения к
+    /// банку вместо одного, а <c>expires_in</c> разбирался и не использовался.
+    /// </para>
+    /// </remarks>
     public async Task<TBankSplitShopsTokenResponse> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
-        var endpoint = new Uri(options.ResolveBaseAddress(), "oauth/token");
+        // Отсчёт от отправки, а не от разбора ответа: так оценка срока годности заведомо не длиннее
+        // настоящей.
+        var issuedAt = DateTimeOffset.UtcNow;
+
+        var endpoint = new Uri(baseAddress, "oauth/token");
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = new FormUrlEncodedContent(
@@ -60,22 +79,33 @@ public sealed class TBankSplitShopsClient
             "Basic",
             Convert.ToBase64String(Encoding.ASCII.GetBytes("partner:partner")));
 
-        return await SendAsync<TBankSplitShopsTokenResponse>("oauth/token", request, cancellationToken)
+        var token = await SendAsync<TBankSplitShopsTokenResponse>("oauth/token", request, cancellationToken)
             .ConfigureAwait(false);
+
+        return token.ExpiresIn is { } expiresInSeconds
+            ? token with { ExpiresAt = issuedAt.AddSeconds(expiresInSeconds) }
+            : token;
     }
 
     /// <summary>
     /// Регистрирует точку партнера.
     /// </summary>
+    /// <param name="request">Данные регистрируемой точки.</param>
+    /// <param name="accessToken">
+    /// Токен, выпущенный <see cref="GetAccessTokenAsync"/>. Передаётся явно, чтобы вызывающая сторона
+    /// могла переиспользовать его между вызовами.
+    /// </param>
+    /// <param name="cancellationToken">Токен отмены.</param>
     public async Task<TBankShopMutationResponse> RegisterShopAsync(
         TBankRegisterShopRequest request,
+        TBankSplitShopsAccessToken accessToken,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        EnsureAccessToken(accessToken);
         TBankSplitShopsRequestValidator.Validate(request);
 
-        var token = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
-        using var httpRequest = CreateJsonRequest(HttpMethod.Post, "sm-register/register", request, token.AccessToken);
+        using var httpRequest = CreateJsonRequest(HttpMethod.Post, "sm-register/register", request, accessToken);
 
         return await SendAsync<TBankShopMutationResponse>("sm-register/register", httpRequest, cancellationToken)
             .ConfigureAwait(false);
@@ -84,8 +114,12 @@ public sealed class TBankSplitShopsClient
     /// <summary>
     /// Получает информацию по точке партнера.
     /// </summary>
+    /// <param name="shopCode">Код точки, выданный банком при регистрации.</param>
+    /// <param name="accessToken">Токен, выпущенный <see cref="GetAccessTokenAsync"/>.</param>
+    /// <param name="cancellationToken">Токен отмены.</param>
     public async Task<TBankShopInfoResponse> GetShopAsync(
         string shopCode,
+        TBankSplitShopsAccessToken accessToken,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(shopCode))
@@ -93,10 +127,11 @@ public sealed class TBankSplitShopsClient
             throw new TBankSplitShopsValidationException("Shop code must be provided.");
         }
 
-        var token = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        EnsureAccessToken(accessToken);
+
         var path = $"sm-register/register/shop/{Uri.EscapeDataString(shopCode)}";
-        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(options.ResolveBaseAddress(), path));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(baseAddress, path));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Value);
 
         return await SendAsync<TBankShopInfoResponse>(path, request, cancellationToken).ConfigureAwait(false);
     }
@@ -104,9 +139,14 @@ public sealed class TBankSplitShopsClient
     /// <summary>
     /// Обновляет информацию о точке партнера.
     /// </summary>
+    /// <param name="shopCode">Код точки, выданный банком при регистрации.</param>
+    /// <param name="request">Обновляемые данные точки.</param>
+    /// <param name="accessToken">Токен, выпущенный <see cref="GetAccessTokenAsync"/>.</param>
+    /// <param name="cancellationToken">Токен отмены.</param>
     public async Task<TBankShopMutationResponse> UpdateShopAsync(
         string shopCode,
         TBankUpdateShopRequest request,
+        TBankSplitShopsAccessToken accessToken,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(shopCode))
@@ -115,11 +155,11 @@ public sealed class TBankSplitShopsClient
         }
 
         ArgumentNullException.ThrowIfNull(request);
+        EnsureAccessToken(accessToken);
         TBankSplitShopsRequestValidator.Validate(request);
 
-        var token = await GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
         var path = $"sm-register/register/{Uri.EscapeDataString(shopCode)}";
-        using var httpRequest = CreateJsonRequest(HttpMethod.Patch, path, request, token.AccessToken);
+        using var httpRequest = CreateJsonRequest(HttpMethod.Patch, path, request, accessToken);
 
         return await SendAsync<TBankShopMutationResponse>(path, httpRequest, cancellationToken).ConfigureAwait(false);
     }
@@ -128,22 +168,32 @@ public sealed class TBankSplitShopsClient
         HttpMethod method,
         string path,
         TRequest body,
-        string accessToken)
+        TBankSplitShopsAccessToken accessToken)
     {
-        var request = new HttpRequestMessage(method, new Uri(options.ResolveBaseAddress(), path))
+        var request = new HttpRequestMessage(method, new Uri(baseAddress, path))
         {
             Content = JsonContent.Create(body, options: JsonOptions)
         };
 
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Value);
 
         return request;
+    }
+
+    private static void EnsureAccessToken(TBankSplitShopsAccessToken accessToken)
+    {
+        if (string.IsNullOrWhiteSpace(accessToken.Value))
+        {
+            throw new TBankSplitShopsValidationException(
+                "An access token must be provided. Issue one with GetAccessTokenAsync.");
+        }
     }
 
     private async Task<TResponse> SendAsync<TResponse>(
         string operation,
         HttpRequestMessage request,
         CancellationToken cancellationToken)
+        where TResponse : ITBankSplitShopsResponse<TResponse>
     {
         HttpResponseMessage response;
 
@@ -174,21 +224,8 @@ public sealed class TBankSplitShopsClient
             }
 
             var result = DeserializeResponse<TResponse>(operation, response.StatusCode, responseBody);
-            return AttachMetadata(result, metadata);
+            return result.WithMetadata(metadata);
         }
-    }
-
-    private static TResponse AttachMetadata<TResponse>(
-        TResponse response,
-        TBankSplitShopsResponseMetadata metadata)
-    {
-        return response switch
-        {
-            TBankSplitShopsTokenResponse token => (TResponse)(object)(token with { Metadata = metadata }),
-            TBankShopMutationResponse mutation => (TResponse)(object)(mutation with { Metadata = metadata }),
-            TBankShopInfoResponse info => (TResponse)(object)(info with { Metadata = metadata }),
-            _ => response
-        };
     }
 
     private static TResponse DeserializeResponse<TResponse>(
