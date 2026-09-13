@@ -11,15 +11,6 @@ on:
         description: 'Package version to publish, for example 0.1.0-preview.1'
         required: true
         type: string
-      package:
-        description: 'Package to publish'
-        required: true
-        type: choice
-        default: TBankAcquiringNet.Payments
-        options:
-          - TBankAcquiringNet.Payments
-          - TBankNet.Multisplit
-
 permissions:
   contents: read
   packages: write
@@ -41,37 +32,17 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore TBankAcquiringNet.slnx
+        run: dotnet restore TBankNet.Multisplit.slnx
 
       - name: Build
-        run: dotnet build TBankAcquiringNet.slnx --configuration Release --no-restore
+        run: dotnet build TBankNet.Multisplit.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test TBankAcquiringNet.slnx --configuration Release --no-build --verbosity normal
-
-      - name: Resolve Package
-        id: package
-        env:
-          PACKAGE: ${{ inputs.package }}
-        run: |
-          case "$PACKAGE" in
-            TBankAcquiringNet.Payments)
-              echo "project=src/TBankAcquiringNet.Payments/TBankAcquiringNet.Payments.csproj" >> "$GITHUB_OUTPUT"
-              echo "id=TBankAcquiringNet.Payments" >> "$GITHUB_OUTPUT"
-              ;;
-            TBankNet.Multisplit)
-              echo "project=src/TBankNet.Multisplit/TBankNet.Multisplit.csproj" >> "$GITHUB_OUTPUT"
-              echo "id=TBankNet.Multisplit" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "Unsupported package '$PACKAGE'" >&2
-              exit 1
-              ;;
-          esac
+        run: dotnet test TBankNet.Multisplit.slnx --configuration Release --no-build --verbosity normal
 
       - name: Pack Requested Version
         run: >
-          dotnet pack ${{ steps.package.outputs.project }}
+          dotnet pack src/TBankNet.Multisplit/TBankNet.Multisplit.csproj
           --configuration Release
           --no-build
           --output artifacts/packages
@@ -90,7 +61,7 @@ jobs:
 
       - name: Publish Package
         run: >
-          dotnet nuget push artifacts/packages/${{ steps.package.outputs.id }}.${{ inputs.version }}.nupkg
+          dotnet nuget push artifacts/packages/TBankNet.Multisplit.${{ inputs.version }}.nupkg
           --source github
           --api-key "${{ secrets.GITHUB_TOKEN }}"
           --skip-duplicate

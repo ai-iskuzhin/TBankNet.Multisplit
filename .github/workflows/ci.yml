@@ -23,16 +23,16 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore TBankAcquiringNet.slnx
+        run: dotnet restore TBankNet.Multisplit.slnx
 
       - name: Build
-        run: dotnet build TBankAcquiringNet.slnx --configuration Release --no-restore
+        run: dotnet build TBankNet.Multisplit.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test TBankAcquiringNet.slnx --configuration Release --no-build --verbosity normal
+        run: dotnet test TBankNet.Multisplit.slnx --configuration Release --no-build --verbosity normal
 
       - name: Pack Packages
-        run: dotnet pack TBankAcquiringNet.slnx --configuration Release --no-build --output artifacts/packages
+        run: dotnet pack TBankNet.Multisplit.slnx --configuration Release --no-build --output artifacts/packages
 
       - name: Upload Packages
         uses: actions/upload-artifact@v5

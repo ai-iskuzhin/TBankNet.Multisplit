@@ -84,22 +84,69 @@ private async Task<TBankMultisplitAccessToken> GetTokenAsync(CancellationToken c
 
 ## TLS
 
-T-Bank отдаёт `*.tinkoff.ru` из Russian Trusted CA (Минцифры). Корня нет в стандартных хранилищах,
-поэтому либо установите его в системное хранилище, либо передайте `HttpClient`, который ему доверяет:
+T-Bank отдаёт `*.tinkoff.ru` из Russian Trusted CA (Минцифры). Этого корня нет ни в одном
+стандартном хранилище ОС и контейнерных образов, поэтому обычный `HttpClient` падает с
+`UntrustedRoot` ещё до отправки запроса.
+
+Самый простой путь — установить корень в системное хранилище, после чего никакого кода не нужно.
+Сертификат берётся из официального дистрибутива Минцифры ([gosuslugi.ru/crt](https://www.gosuslugi.ru/crt)):
+
+```bash
+# Debian/Ubuntu
+sudo cp russian_trusted_root_ca_pem.crt /usr/local/share/ca-certificates/russian_trusted_root_ca.crt
+sudo update-ca-certificates
+
+# RHEL/CentOS/Alma
+sudo cp russian_trusted_root_ca_pem.crt /etc/pki/ca-trust/source/anchors/
+sudo update-ca-trust
+```
+
+Если менять образ нельзя, доверие расширяется на стороне `HttpClient`, который вы передаёте клиенту.
+Системная проверка остаётся первой, корень Минцифры добавляется только как запасной якорь, а
+несовпадение имени хоста и истёкший сертификат по-прежнему отвергаются:
 
 ```csharp
-using TBankAcquiringNet;
+var russianTrustedRoot = X509CertificateLoader.LoadCertificateFromFile("russian_trusted_root_ca.crt");
 
 var handler = new SocketsHttpHandler();
 handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, chain, errors) =>
-    TBankServerCertificateValidator.RussianTrustedCa.Validate(
-        null, certificate as X509Certificate2, chain, errors);
+{
+    if (errors == SslPolicyErrors.None)
+    {
+        return true;
+    }
+
+    // Восстановить добавлением якорей можно только ошибку цепочки.
+    if (errors != SslPolicyErrors.RemoteCertificateChainErrors || certificate is not X509Certificate2 server)
+    {
+        return false;
+    }
+
+    using var customChain = new X509Chain();
+    customChain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+    customChain.ChainPolicy.CustomTrustStore.Add(russianTrustedRoot);
+    customChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+    if (chain is not null)
+    {
+        foreach (var element in chain.ChainElements)
+        {
+            customChain.ChainPolicy.ExtraStore.Add(element.Certificate);
+        }
+    }
+
+    return customChain.Build(server);
+};
 
 using var httpClient = new HttpClient(handler);
 ```
 
+ГОСТ-сертификаты Минцифры для этого не годятся: .NET не проверяет подписи ГОСТ Р 34.10-2012 и не
+поддерживает ГОСТ-шифронаборы TLS. Нужна RSA-цепочка.
+
 Боевой доступ к `acqapi.tinkoff.ru` дополнительно может требовать клиентского mTLS-сертификата и
-включения IP в список разрешённых — см. [samples/TBankAcquiringNet.MtlsExample](samples/TBankAcquiringNet.MtlsExample).
+включения IP в список разрешённых — см.
+[samples/TBankNet.Multisplit.MtlsExample](samples/TBankNet.Multisplit.MtlsExample).
 
 ## Обработка ошибок
 

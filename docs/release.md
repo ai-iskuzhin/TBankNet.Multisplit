@@ -1,141 +1,60 @@
-# Release Process
+# Release
 
-This project uses Semantic Versioning for NuGet packages.
+`TBankNet.Multisplit` is a standalone package: one project, one package id, one version.
 
-Preview versions should use a prerelease suffix:
-
-```text
-0.1.0-preview.1
-0.1.0-preview.2
-0.2.0-preview.1
-```
-
-Stable versions should use plain SemVer:
-
-```text
-1.0.0
-1.1.0
-2.0.0
-```
-
-## Before Release
-
-1. Update package version metadata in `Directory.Build.props` or in each package project being released.
-2. Update `CHANGELOG.md`.
-3. Update the repository `README.md` and package-specific `src/<Package>/README.md` files if the public API, supported methods, or package list changed.
-4. Run:
+## Preflight
 
 ```bash
-dotnet test TBankAcquiringNet.slnx
-dotnet pack TBankAcquiringNet.slnx --configuration Release --output artifacts/packages
+dotnet restore TBankNet.Multisplit.slnx
+dotnet build TBankNet.Multisplit.slnx --configuration Release --no-restore
+dotnet test TBankNet.Multisplit.slnx --configuration Release --no-build
+dotnet pack src/TBankNet.Multisplit/TBankNet.Multisplit.csproj \
+  --configuration Release --no-build --output artifacts/packages
 ```
 
-5. If T-Bank terminal credentials are available, run the real payments integration test:
+Check the package carries its README, icon and XML docs before publishing anything:
 
 ```bash
-set -a
-source .env
-set +a
-dotnet test tests/TBankAcquiringNet.Payments.Tests.Integration/TBankAcquiringNet.Payments.Tests.Integration.csproj
+unzip -l artifacts/packages/TBankNet.Multisplit.<version>.nupkg
 ```
 
-6. Inspect the generated packages:
+Expect `README.md`, `icon.png`, `lib/net10.0/TBankNet.Multisplit.dll` and
+`lib/net10.0/TBankNet.Multisplit.xml`.
+
+## Versioning
+
+`Version` lives in [Directory.Build.props](../Directory.Build.props). A version containing `-` is
+treated as a prerelease by the release workflow and marked as such on GitHub.
+
+## Publishing
+
+Both workflows authenticate with **NuGet Trusted Publishing** (OIDC): the GitHub token is exchanged
+for a short-lived NuGet.org key at run time, so no long-lived `NUGET_API_KEY` secret exists in this
+repository.
+
+Prerequisites, once:
+
+1. A trusted publishing policy on NuGet.org for `ai-iskuzhin/TBankNet.Multisplit`.
+2. A repository variable `NUGET_USER` set to the owning NuGet.org account.
+
+### Tagged release
 
 ```bash
-unzip -l artifacts/packages/TBankAcquiringNet.Payments.<version>.nupkg
+git tag -a v0.3.0-preview.1 -m "TBankNet.Multisplit 0.3.0-preview.1"
+git push origin v0.3.0-preview.1
 ```
 
-## Package Versions
+[`release.yml`](../.github/workflows/release.yml) builds, tests, packs, creates the GitHub Release
+with the packages attached, and pushes to NuGet.org. Without `NUGET_USER` it still creates the
+release and skips only the push.
 
-Packages can be versioned independently while the project is in preview, but aligned versions are preferred when publishing the whole package family from one release tag.
+### Manual
 
-Current package identities:
+[`publish-nuget.yml`](../.github/workflows/publish-nuget.yml) — run it from the Actions tab with a
+git ref and a version. Use it to republish a version or to ship from a ref that was never tagged.
 
-```text
-TBankAcquiringNet.Payments
-TBankNet.Multisplit
-TBankAcquiringNet.Multisplit.Payouts
-```
+[`publish-github-packages.yml`](../.github/workflows/publish-github-packages.yml) does the same
+against GitHub Packages, authenticating with the built-in `GITHUB_TOKEN`.
 
-`TBankAcquiringNet.Payments` and `TBankNet.Multisplit` have implemented runtime behavior. `TBankAcquiringNet.Multisplit.Payouts` is intentionally marked non-packable until it has a real SDK surface.
-
-## GitHub Actions
-
-CI runs on pull requests, pushes to `main`, and `v*` tags. It restores, builds, tests, packs all packable SDK packages, and uploads package artifacts.
-
-Release automation runs when a `v*` tag is pushed. It creates a GitHub Release, attaches generated package artifacts, and publishes to NuGet.org when the repository secret `NUGET_API_KEY` is configured.
-
-Manual publishing workflows are also available:
-
-```text
-Publish NuGet
-Publish GitHub Packages
-```
-
-For manual NuGet publishing, provide:
-
-```text
-git_ref: v0.1.0-preview.1
-version: 0.1.0-preview.1
-package: TBankAcquiringNet.Payments
-```
-
-## Tagging
-
-Use tags that match the package version prefixed with `v`:
-
-```bash
-git tag -a v0.1.0-preview.1 -m "TBankAcquiringNet packages 0.1.0-preview.1"
-git push origin v0.1.0-preview.1
-```
-
-Preview tags such as `v0.1.0-preview.1` should be marked as GitHub prereleases.
-
-If a tag was pushed before the release workflow existed, GitHub Actions will not retroactively run the tag workflow. In that case, create the GitHub Release manually from the existing tag, use the manual `Publish NuGet` workflow, or push the next preview tag after the workflow is merged.
-
-## Publishing To NuGet
-
-Manual publishing:
-
-```bash
-dotnet nuget push artifacts/packages/TBankAcquiringNet.Payments.<version>.nupkg \
-  --source https://api.nuget.org/v3/index.json \
-  --api-key <NUGET_API_KEY>
-```
-
-Use `--skip-duplicate` when retrying:
-
-```bash
-dotnet nuget push artifacts/packages/*.nupkg \
-  --source https://api.nuget.org/v3/index.json \
-  --api-key <NUGET_API_KEY> \
-  --skip-duplicate
-```
-
-## GitHub Release
-
-Create a GitHub release from the pushed tag and attach the generated package artifacts.
-
-For `0.1.0-preview.1`, attach:
-
-```text
-TBankAcquiringNet.Payments.0.1.0-preview.1.nupkg
-```
-
-Attach all generated `.nupkg` and `.snupkg` artifacts for the released version.
-
-## Repository Secrets
-
-When CI publishing is added, use a repository secret named:
-
-```text
-NUGET_API_KEY
-```
-
-T-Bank integration-test credentials should be stored as separate CI secrets only in protected jobs:
-
-```text
-TBANK_ACQUIRING_TEST_TERMINAL_KEY
-TBANK_ACQUIRING_TEST_PASSWORD
-TBANK_ACQUIRING_TEST_BASE_URL
-```
+Every push uses `--skip-duplicate`, so re-running a workflow on an already-published version is a
+no-op rather than a failure.

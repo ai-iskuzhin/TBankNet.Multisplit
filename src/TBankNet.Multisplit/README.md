@@ -71,21 +71,25 @@ better a 401 you can retry than a working token thrown away on a guess.
 
 T-Bank serves `*.tinkoff.ru` from the Russian Trusted CA (Минцифры), whose root ships in no common
 OS or container image. A default `HttpClient` fails the handshake with `UntrustedRoot` before any
-request is sent. Either install the root into the system store, or supply an `HttpClient` that
-trusts it:
+request is sent.
 
-```csharp
-using TBankAcquiringNet;
+Install the root into the system trust store and no code is needed:
 
-var handler = new SocketsHttpHandler();
-handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, chain, errors) =>
-    TBankServerCertificateValidator.RussianTrustedCa.Validate(
-        null, certificate as X509Certificate2, chain, errors);
-
-using var httpClient = new HttpClient(handler);
+```bash
+# Debian/Ubuntu
+sudo cp russian_trusted_root_ca_pem.crt /usr/local/share/ca-certificates/russian_trusted_root_ca.crt
+sudo update-ca-certificates
 ```
 
-Production access to `acqapi.tinkoff.ru` may also require mTLS client certificates and IP allow-listing according to T-Bank registration API requirements.
+Otherwise extend trust on the `HttpClient` you pass to the client — keep the system check first and
+add the Минцифры root only as a fallback anchor, so a hostname mismatch or an expired certificate is
+still rejected. The repository README has a full example.
+
+The GOST certificates from the same distribution are of no use here: .NET verifies neither
+GOST R 34.10-2012 signatures nor GOST TLS cipher suites. Use the RSA chain.
+
+Production access to `acqapi.tinkoff.ru` may also require an mTLS client certificate and IP
+allow-listing according to T-Bank registration API requirements.
 
 ## Registration
 
@@ -103,4 +107,4 @@ Transport, protocol, and local validation failures are thrown as SDK exceptions.
 
 Source, issue tracking, and full documentation live in the repository:
 
-https://github.com/ai-iskuzhin/TBankAcquiringNet
+https://github.com/ai-iskuzhin/TBankNet.Multisplit
