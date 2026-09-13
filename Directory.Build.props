@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
-    <Version>0.2.0-preview.3</Version>
+    <Version>0.3.0-preview.1</Version>
     <Authors>TBankNet.Multisplit contributors</Authors>
     <PackageProjectUrl>https://github.com/ai-iskuzhin/TBankNet.Multisplit</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ai-iskuzhin/TBankNet.Multisplit</RepositoryUrl>
