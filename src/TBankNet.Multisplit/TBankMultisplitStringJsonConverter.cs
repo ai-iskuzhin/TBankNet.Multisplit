@@ -2,9 +2,9 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TBankAcquiringNet.SplitShops;
+namespace TBankNet.Multisplit;
 
-internal sealed class TBankSplitShopStringJsonConverter : JsonConverter<string>
+internal sealed class TBankMultisplitStringJsonConverter : JsonConverter<string>
 {
     public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

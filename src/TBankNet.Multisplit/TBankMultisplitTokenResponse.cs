@@ -1,12 +1,12 @@
 using System.Text.Json.Serialization;
 
-namespace TBankAcquiringNet.SplitShops;
+namespace TBankNet.Multisplit;
 
 /// <summary>
-/// Ответ OAuth-авторизации для API регистрации точек T-Bank Split
+/// Ответ OAuth-авторизации для API регистрации точек T-Bank Multisplit
 /// </summary>
-public sealed record TBankSplitShopsTokenResponse
-    : ITBankSplitShopsResponse<TBankSplitShopsTokenResponse>
+public sealed record TBankMultisplitTokenResponse
+    : ITBankMultisplitResponse<TBankMultisplitTokenResponse>
 {
     /// <summary>Access token для заголовка Authorization: Bearer.</summary>
     [JsonPropertyName("access_token")]
@@ -42,11 +42,11 @@ public sealed record TBankSplitShopsTokenResponse
 
     /// <summary>HTTP-метаданные ответа.</summary>
     [JsonIgnore]
-    public TBankSplitShopsResponseMetadata? Metadata { get; init; }
+    public TBankMultisplitResponseMetadata? Metadata { get; init; }
 
     /// <summary>Токен в виде, который принимают методы клиента.</summary>
-    public TBankSplitShopsAccessToken ToAccessToken() => new(AccessToken, ExpiresAt);
+    public TBankMultisplitAccessToken ToAccessToken() => new(AccessToken, ExpiresAt);
 
-    TBankSplitShopsTokenResponse ITBankSplitShopsResponse<TBankSplitShopsTokenResponse>.WithMetadata(
-        TBankSplitShopsResponseMetadata metadata) => this with { Metadata = metadata };
+    TBankMultisplitTokenResponse ITBankMultisplitResponse<TBankMultisplitTokenResponse>.WithMetadata(
+        TBankMultisplitResponseMetadata metadata) => this with { Metadata = metadata };
 }

@@ -3,9 +3,9 @@
     <Project Path="samples/TBankAcquiringNet.MtlsExample/TBankAcquiringNet.MtlsExample.csproj" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src/TBankAcquiringNet.SplitShops/TBankAcquiringNet.SplitShops.csproj" />
+    <Project Path="src/TBankNet.Multisplit/TBankNet.Multisplit.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/TBankAcquiringNet.SplitShops.Tests/TBankAcquiringNet.SplitShops.Tests.csproj" />
+    <Project Path="tests/TBankNet.Multisplit.Tests/TBankNet.Multisplit.Tests.csproj" />
   </Folder>
 </Solution>

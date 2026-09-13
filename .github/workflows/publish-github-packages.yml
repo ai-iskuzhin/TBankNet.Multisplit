@@ -18,7 +18,7 @@ on:
         default: TBankAcquiringNet.Payments
         options:
           - TBankAcquiringNet.Payments
-          - TBankAcquiringNet.SplitShops
+          - TBankNet.Multisplit
 
 permissions:
   contents: read
@@ -59,9 +59,9 @@ jobs:
               echo "project=src/TBankAcquiringNet.Payments/TBankAcquiringNet.Payments.csproj" >> "$GITHUB_OUTPUT"
               echo "id=TBankAcquiringNet.Payments" >> "$GITHUB_OUTPUT"
               ;;
-            TBankAcquiringNet.SplitShops)
-              echo "project=src/TBankAcquiringNet.SplitShops/TBankAcquiringNet.SplitShops.csproj" >> "$GITHUB_OUTPUT"
-              echo "id=TBankAcquiringNet.SplitShops" >> "$GITHUB_OUTPUT"
+            TBankNet.Multisplit)
+              echo "project=src/TBankNet.Multisplit/TBankNet.Multisplit.csproj" >> "$GITHUB_OUTPUT"
+              echo "id=TBankNet.Multisplit" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Unsupported package '$PACKAGE'" >&2

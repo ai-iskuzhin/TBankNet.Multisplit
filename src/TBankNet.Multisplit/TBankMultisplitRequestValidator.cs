@@ -1,10 +1,11 @@
-namespace TBankAcquiringNet.SplitShops;
+namespace TBankNet.Multisplit;
 
-internal static class TBankSplitShopsRequestValidator
+internal static class TBankMultisplitRequestValidator
 {
     public static void Validate(TBankRegisterShopRequest request)
     {
         Require(request.BillingDescriptor, "Billing descriptor must be provided.");
+        RequireSize(request.BillingDescriptor, 1, 14, "Billing descriptor");
         Require(request.FullName, "Full name must be provided.");
         Require(request.Name, "Name must be provided.");
         Require(request.Inn, "INN must be provided.");
@@ -13,12 +14,12 @@ internal static class TBankSplitShopsRequestValidator
 
         if (request.Ogrn <= 0)
         {
-            throw new TBankSplitShopsValidationException("OGRN must be greater than zero.");
+            throw new TBankMultisplitValidationException("OGRN must be greater than zero.");
         }
 
         if (request.Addresses is null || request.Addresses.Count == 0)
         {
-            throw new TBankSplitShopsValidationException("At least one address must be provided.");
+            throw new TBankMultisplitValidationException("At least one address must be provided.");
         }
 
         foreach (var address in request.Addresses)
@@ -32,7 +33,7 @@ internal static class TBankSplitShopsRequestValidator
 
         if (request.Ceo is null)
         {
-            throw new TBankSplitShopsValidationException("CEO must be provided.");
+            throw new TBankMultisplitValidationException("CEO must be provided.");
         }
 
         Require(request.Ceo.FirstName, "CEO first name must be provided.");
@@ -42,7 +43,7 @@ internal static class TBankSplitShopsRequestValidator
 
         if (request.BankAccount is null)
         {
-            throw new TBankSplitShopsValidationException("Bank account must be provided.");
+            throw new TBankMultisplitValidationException("Bank account must be provided.");
         }
 
         Validate(request.BankAccount);
@@ -83,7 +84,7 @@ internal static class TBankSplitShopsRequestValidator
 
         if (string.IsNullOrWhiteSpace(kbk) || string.IsNullOrWhiteSpace(oktmo))
         {
-            throw new TBankSplitShopsValidationException("KBK and OKTMO must be provided together.");
+            throw new TBankMultisplitValidationException("KBK and OKTMO must be provided together.");
         }
     }
 
@@ -91,7 +92,21 @@ internal static class TBankSplitShopsRequestValidator
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new TBankSplitShopsValidationException(message);
+            throw new TBankMultisplitValidationException(message);
+        }
+    }
+
+    private static void RequireSize(string? value, int min, int max, string fieldName)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        if (value.Length < min || value.Length > max)
+        {
+            throw new TBankMultisplitValidationException(
+                $"{fieldName} size must be between {min} and {max}.");
         }
     }
 }

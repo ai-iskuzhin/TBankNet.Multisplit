@@ -53,11 +53,11 @@ Current package identities:
 
 ```text
 TBankAcquiringNet.Payments
-TBankAcquiringNet.SplitShops
+TBankNet.Multisplit
 TBankAcquiringNet.Multisplit.Payouts
 ```
 
-`TBankAcquiringNet.Payments` and `TBankAcquiringNet.SplitShops` have implemented runtime behavior. `TBankAcquiringNet.Multisplit.Payouts` is intentionally marked non-packable until it has a real SDK surface.
+`TBankAcquiringNet.Payments` and `TBankNet.Multisplit` have implemented runtime behavior. `TBankAcquiringNet.Multisplit.Payouts` is intentionally marked non-packable until it has a real SDK surface.
 
 ## GitHub Actions
 

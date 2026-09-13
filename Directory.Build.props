@@ -7,11 +7,11 @@
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <Version>0.2.0-preview.3</Version>
     <Authors>TBankAcquiringNet contributors</Authors>
-    <PackageProjectUrl>https://github.com/ai-iskuzhin/TBankAcquiringNet.SplitShops</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/ai-iskuzhin/TBankAcquiringNet.SplitShops</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/ai-iskuzhin/TBankNet.Multisplit</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ai-iskuzhin/TBankNet.Multisplit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>tbank;tinkoff;acquiring;split;shops</PackageTags>
+    <PackageTags>tbank;tinkoff;acquiring;multisplit;shops</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>

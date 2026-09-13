@@ -1,9 +1,9 @@
 using System.Text.Json.Serialization;
 
-namespace TBankAcquiringNet.SplitShops;
+namespace TBankNet.Multisplit;
 
 /// <summary>
-/// Запрос регистрации точки партнера в T-Bank Split
+/// Запрос регистрации точки партнера в T-Bank Multisplit
 /// </summary>
 public sealed record TBankRegisterShopRequest
 {
@@ -303,13 +303,13 @@ public sealed record TBankShopBankAccountUpdate
 /// Ответ регистрации или обновления точки партнера.
 /// </summary>
 public sealed record TBankShopMutationResponse
-    : ITBankSplitShopsResponse<TBankShopMutationResponse>
+    : ITBankMultisplitResponse<TBankShopMutationResponse>
 {
     /// <summary>Код точки на стороне партнера.</summary>
     public string? Code { get; init; }
 
     /// <summary>Присвоенный идентификатор точки на стороне банка.</summary>
-    [JsonConverter(typeof(TBankSplitShopStringJsonConverter))]
+    [JsonConverter(typeof(TBankMultisplitStringJsonConverter))]
     public string? ShopCode { get; init; }
 
     /// <summary>Информация о зарегистрированных терминалах.</summary>
@@ -317,10 +317,10 @@ public sealed record TBankShopMutationResponse
 
     /// <summary>HTTP-метаданные ответа.</summary>
     [JsonIgnore]
-    public TBankSplitShopsResponseMetadata? Metadata { get; init; }
+    public TBankMultisplitResponseMetadata? Metadata { get; init; }
 
-    TBankShopMutationResponse ITBankSplitShopsResponse<TBankShopMutationResponse>.WithMetadata(
-        TBankSplitShopsResponseMetadata metadata) => this with { Metadata = metadata };
+    TBankShopMutationResponse ITBankMultisplitResponse<TBankShopMutationResponse>.WithMetadata(
+        TBankMultisplitResponseMetadata metadata) => this with { Metadata = metadata };
 }
 
 /// <summary>
@@ -329,7 +329,7 @@ public sealed record TBankShopMutationResponse
 public sealed record TBankShopTerminal
 {
     /// <summary>Идентификатор терминала, если банк вернул его в ответе.</summary>
-    [JsonConverter(typeof(TBankSplitShopStringJsonConverter))]
+    [JsonConverter(typeof(TBankMultisplitStringJsonConverter))]
     public string? TerminalId { get; init; }
 }
 
@@ -337,7 +337,7 @@ public sealed record TBankShopTerminal
 /// Ответ получения информации по точке.
 /// </summary>
 public sealed record TBankShopInfoResponse
-    : ITBankSplitShopsResponse<TBankShopInfoResponse>
+    : ITBankMultisplitResponse<TBankShopInfoResponse>
 {
     /// <summary>Идентификаторы агрегированных мерчантов.</summary>
     public IReadOnlyList<long> MerchantIds { get; init; } = [];
@@ -374,10 +374,10 @@ public sealed record TBankShopInfoResponse
 
     /// <summary>HTTP-метаданные ответа.</summary>
     [JsonIgnore]
-    public TBankSplitShopsResponseMetadata? Metadata { get; init; }
+    public TBankMultisplitResponseMetadata? Metadata { get; init; }
 
-    TBankShopInfoResponse ITBankSplitShopsResponse<TBankShopInfoResponse>.WithMetadata(
-        TBankSplitShopsResponseMetadata metadata) => this with { Metadata = metadata };
+    TBankShopInfoResponse ITBankMultisplitResponse<TBankShopInfoResponse>.WithMetadata(
+        TBankMultisplitResponseMetadata metadata) => this with { Metadata = metadata };
 }
 
 /// <summary>
@@ -481,9 +481,9 @@ public sealed record TBankShopPaymentSystemAttribute
 }
 
 /// <summary>
-/// Ошибка API регистрации точек T-Bank Split
+/// Ошибка API регистрации точек T-Bank Multisplit
 /// </summary>
-public sealed record TBankSplitShopsErrorResponse
+public sealed record TBankMultisplitErrorResponse
 {
     /// <summary>Время ошибки.</summary>
     public string? Timestamp { get; init; }
@@ -501,13 +501,13 @@ public sealed record TBankSplitShopsErrorResponse
     public string? Path { get; init; }
 
     /// <summary>Ошибки валидации полей.</summary>
-    public IReadOnlyList<TBankSplitShopsFieldError> Errors { get; init; } = [];
+    public IReadOnlyList<TBankMultisplitFieldError> Errors { get; init; } = [];
 }
 
 /// <summary>
 /// Ошибка валидации поля запроса регистрации или обновления точки.
 /// </summary>
-public sealed record TBankSplitShopsFieldError
+public sealed record TBankMultisplitFieldError
 {
     /// <summary>Имя параметра запроса, в котором допущена ошибка.</summary>
     public string? Field { get; init; }

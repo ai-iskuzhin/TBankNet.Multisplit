@@ -1,20 +1,20 @@
 using System.Net;
 
-namespace TBankAcquiringNet.SplitShops;
+namespace TBankNet.Multisplit;
 
 /// <summary>
-/// Базовое исключение SDK для регистрации точек T-Bank Split
+/// Базовое исключение SDK для регистрации точек T-Bank Multisplit
 /// </summary>
-public abstract class TBankSplitShopsException : Exception
+public abstract class TBankMultisplitException : Exception
 {
     /// <summary>Создает исключение SDK.</summary>
-    protected TBankSplitShopsException(string message)
+    protected TBankMultisplitException(string message)
         : base(message)
     {
     }
 
     /// <summary>Создает исключение SDK с внутренней причиной.</summary>
-    protected TBankSplitShopsException(string message, Exception? innerException)
+    protected TBankMultisplitException(string message, Exception? innerException)
         : base(message, innerException)
     {
     }
@@ -23,10 +23,10 @@ public abstract class TBankSplitShopsException : Exception
 /// <summary>
 /// Ошибка транспорта: запрос не получил корректный HTTP-ответ.
 /// </summary>
-public sealed class TBankSplitShopsTransportException : TBankSplitShopsException
+public sealed class TBankMultisplitTransportException : TBankMultisplitException
 {
     /// <summary>Создает исключение транспортного уровня.</summary>
-    public TBankSplitShopsTransportException(string message, Exception innerException)
+    public TBankMultisplitTransportException(string message, Exception innerException)
         : base(message, innerException)
     {
     }
@@ -35,10 +35,10 @@ public sealed class TBankSplitShopsTransportException : TBankSplitShopsException
 /// <summary>
 /// Ошибка протокола: ответ получен, но его невозможно безопасно разобрать.
 /// </summary>
-public sealed class TBankSplitShopsProtocolException : TBankSplitShopsException
+public sealed class TBankMultisplitProtocolException : TBankMultisplitException
 {
     /// <summary>Создает исключение протокола T-Bank.</summary>
-    public TBankSplitShopsProtocolException(
+    public TBankMultisplitProtocolException(
         string message,
         HttpStatusCode? httpStatusCode = null,
         string? responseBodyPreview = null,
@@ -59,26 +59,26 @@ public sealed class TBankSplitShopsProtocolException : TBankSplitShopsException
 /// <summary>
 /// Ошибка локальной валидации запроса до отправки в T-Bank.
 /// </summary>
-public sealed class TBankSplitShopsValidationException : TBankSplitShopsException
+public sealed class TBankMultisplitValidationException : TBankMultisplitException
 {
     /// <summary>Создает исключение локальной валидации.</summary>
-    public TBankSplitShopsValidationException(string message)
+    public TBankMultisplitValidationException(string message)
         : base(message)
     {
     }
 }
 
 /// <summary>
-/// Ошибка API регистрации точек T-Bank Split
+/// Ошибка API регистрации точек T-Bank Multisplit
 /// </summary>
-public sealed class TBankSplitShopsApiException : TBankSplitShopsException
+public sealed class TBankMultisplitApiException : TBankMultisplitException
 {
     /// <summary>Создает исключение API T-Bank.</summary>
-    public TBankSplitShopsApiException(
+    public TBankMultisplitApiException(
         string message,
         HttpStatusCode httpStatusCode,
-        TBankSplitShopsErrorResponse? errorResponse,
-        TBankSplitShopsResponseMetadata metadata)
+        TBankMultisplitErrorResponse? errorResponse,
+        TBankMultisplitResponseMetadata metadata)
         : base(message)
     {
         HttpStatusCode = httpStatusCode;
@@ -90,8 +90,8 @@ public sealed class TBankSplitShopsApiException : TBankSplitShopsException
     public HttpStatusCode HttpStatusCode { get; }
 
     /// <summary>Типизированное тело ошибки, если его удалось разобрать.</summary>
-    public TBankSplitShopsErrorResponse? ErrorResponse { get; }
+    public TBankMultisplitErrorResponse? ErrorResponse { get; }
 
     /// <summary>HTTP-метаданные ответа.</summary>
-    public TBankSplitShopsResponseMetadata Metadata { get; }
+    public TBankMultisplitResponseMetadata Metadata { get; }
 }

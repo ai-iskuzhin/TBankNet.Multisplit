@@ -1,4 +1,4 @@
-namespace TBankAcquiringNet.SplitShops;
+namespace TBankNet.Multisplit;
 
 /// <summary>
 /// OAuth access token для вызовов API регистрации точек.
@@ -10,7 +10,7 @@ namespace TBankAcquiringNet.SplitShops;
 /// </para>
 /// <para>
 /// Жизненным циклом токена SDK не управляет. Он выдаёт токен
-/// (<see cref="TBankSplitShopsClient.GetAccessTokenAsync"/>) и сообщает срок годности; кэширование,
+/// (<see cref="TBankMultisplitClient.GetAccessTokenAsync"/>) и сообщает срок годности; кэширование,
 /// продление и разделение между запросами остаются за вызывающей стороной, которая одна знает,
 /// сколько процессов и сколько запросов делят одни учётные данные.
 /// </para>
@@ -20,7 +20,7 @@ namespace TBankAcquiringNet.SplitShops;
 /// Момент истечения, если банк его сообщил. Считается от времени отправки запроса, а не ответа,
 /// поэтому оценка заведомо консервативна.
 /// </param>
-public readonly record struct TBankSplitShopsAccessToken(string Value, DateTimeOffset? ExpiresAt = null)
+public readonly record struct TBankMultisplitAccessToken(string Value, DateTimeOffset? ExpiresAt = null)
 {
     /// <summary>
     /// Истёк ли токен с учётом запаса на дорогу до банка.
@@ -41,5 +41,5 @@ public readonly record struct TBankSplitShopsAccessToken(string Value, DateTimeO
     }
 
     /// <inheritdoc />
-    public override string ToString() => "TBankSplitShopsAccessToken(***)";
+    public override string ToString() => "TBankMultisplitAccessToken(***)";
 }

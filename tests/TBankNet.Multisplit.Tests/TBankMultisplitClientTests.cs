@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using TBankAcquiringNet.SplitShops;
+using TBankNet.Multisplit;
 
-namespace TBankAcquiringNet.SplitShops.Tests;
+namespace TBankNet.Multisplit.Tests;
 
-public sealed class TBankSplitShopsClientTests
+public sealed class TBankMultisplitClientTests
 {
     [Fact]
     public async Task GetAccessTokenAsync_PostsFormRequestWithBasicAuthorization()
@@ -208,7 +208,7 @@ public sealed class TBankSplitShopsClientTests
         using var httpClient = new HttpClient(handler);
         var client = CreateClient(httpClient);
 
-        var exception = await Assert.ThrowsAsync<TBankSplitShopsApiException>(
+        var exception = await Assert.ThrowsAsync<TBankMultisplitApiException>(
             () => client.RegisterShopAsync(CreateRegisterRequest(), TestAccessToken));
 
         Assert.Equal(HttpStatusCode.BadRequest, exception.HttpStatusCode);
@@ -236,7 +236,7 @@ public sealed class TBankSplitShopsClientTests
             }
         };
 
-        var exception = await Assert.ThrowsAsync<TBankSplitShopsValidationException>(
+        var exception = await Assert.ThrowsAsync<TBankMultisplitValidationException>(
             () => client.RegisterShopAsync(request, TestAccessToken));
 
         Assert.Equal("KBK and OKTMO must be provided together.", exception.Message);
@@ -252,7 +252,7 @@ public sealed class TBankSplitShopsClientTests
             BillingDescriptor = "megaprokat-test" // 15 chars, max is 14
         };
 
-        var exception = await Assert.ThrowsAsync<TBankSplitShopsValidationException>(
+        var exception = await Assert.ThrowsAsync<TBankMultisplitValidationException>(
             () => client.RegisterShopAsync(request, TestAccessToken));
 
         Assert.Equal("Billing descriptor size must be between 1 and 14.", exception.Message);
@@ -298,7 +298,7 @@ public sealed class TBankSplitShopsClientTests
     [Fact]
     public void AccessToken_IsExpired_RespectsLeeway()
     {
-        var token = new TBankSplitShopsAccessToken("access-token", DateTimeOffset.UtcNow.AddSeconds(30));
+        var token = new TBankMultisplitAccessToken("access-token", DateTimeOffset.UtcNow.AddSeconds(30));
 
         Assert.False(token.IsExpired(TimeSpan.FromSeconds(5)));
         Assert.True(token.IsExpired(TimeSpan.FromMinutes(1)));
@@ -307,7 +307,7 @@ public sealed class TBankSplitShopsClientTests
     [Fact]
     public void AccessToken_ToString_DoesNotLeakTheValue()
     {
-        var token = new TBankSplitShopsAccessToken("super-secret");
+        var token = new TBankMultisplitAccessToken("super-secret");
 
         Assert.DoesNotContain("super-secret", token.ToString(), StringComparison.Ordinal);
     }
@@ -319,7 +319,7 @@ public sealed class TBankSplitShopsClientTests
         using var httpClient = new HttpClient(handler);
         var client = CreateClient(httpClient);
 
-        var exception = await Assert.ThrowsAsync<TBankSplitShopsValidationException>(
+        var exception = await Assert.ThrowsAsync<TBankMultisplitValidationException>(
             () => client.RegisterShopAsync(CreateRegisterRequest(), default));
 
         Assert.Contains("GetAccessTokenAsync", exception.Message, StringComparison.Ordinal);
@@ -333,13 +333,13 @@ public sealed class TBankSplitShopsClientTests
 
         // Both used to be accepted, with BaseAddress silently winning — so Environment = Test beside a
         // production BaseAddress looked configured and talked to production.
-        var exception = Assert.Throws<ArgumentException>(() => new TBankSplitShopsClient(
+        var exception = Assert.Throws<ArgumentException>(() => new TBankMultisplitClient(
             httpClient,
-            new TBankSplitShopsClientOptions
+            new TBankMultisplitClientOptions
             {
                 Username = "login",
                 Password = "password",
-                Environment = TBankSplitShopsEnvironment.Test,
+                Environment = TBankMultisplitEnvironment.Test,
                 BaseAddress = new Uri("https://acqapi.tinkoff.ru/")
             }));
 
@@ -352,20 +352,20 @@ public sealed class TBankSplitShopsClientTests
         using var httpClient = new HttpClient();
 
         // Production is never assumed: the old default silently registered real shops.
-        Assert.Throws<ArgumentException>(() => new TBankSplitShopsClient(
+        Assert.Throws<ArgumentException>(() => new TBankMultisplitClient(
             httpClient,
-            new TBankSplitShopsClientOptions { Username = "login", Password = "password" }));
+            new TBankMultisplitClientOptions { Username = "login", Password = "password" }));
     }
 
     [Theory]
-    [InlineData(TBankSplitShopsEnvironment.Test, "https://acqapi-test.tinkoff.ru/oauth/token")]
-    [InlineData(TBankSplitShopsEnvironment.Production, "https://acqapi.tinkoff.ru/oauth/token")]
-    public async Task Options_ResolveEnvironmentToItsHost(TBankSplitShopsEnvironment environment, string expected)
+    [InlineData(TBankMultisplitEnvironment.Test, "https://acqapi-test.tinkoff.ru/oauth/token")]
+    [InlineData(TBankMultisplitEnvironment.Production, "https://acqapi.tinkoff.ru/oauth/token")]
+    public async Task Options_ResolveEnvironmentToItsHost(TBankMultisplitEnvironment environment, string expected)
     {
         using var handler = new QueueingHandler();
         handler.Enqueue("""{"access_token":"access-token","token_type":"bearer"}""");
         using var httpClient = new HttpClient(handler);
-        var client = new TBankSplitShopsClient(httpClient, new TBankSplitShopsClientOptions
+        var client = new TBankMultisplitClient(httpClient, new TBankMultisplitClientOptions
         {
             Username = "login",
             Password = "password",
@@ -377,11 +377,11 @@ public sealed class TBankSplitShopsClientTests
         Assert.Equal(expected, Assert.Single(handler.Requests).RequestUri?.ToString());
     }
 
-    private static readonly TBankSplitShopsAccessToken TestAccessToken = new("access-token");
+    private static readonly TBankMultisplitAccessToken TestAccessToken = new("access-token");
 
-    private static TBankSplitShopsClient CreateClient(HttpClient httpClient)
+    private static TBankMultisplitClient CreateClient(HttpClient httpClient)
     {
-        return new TBankSplitShopsClient(httpClient, new TBankSplitShopsClientOptions
+        return new TBankMultisplitClient(httpClient, new TBankMultisplitClientOptions
         {
             Username = "login",
             Password = "password",

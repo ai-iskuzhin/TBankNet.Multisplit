@@ -6,23 +6,23 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace TBankAcquiringNet.SplitShops;
+namespace TBankNet.Multisplit;
 
 /// <summary>
-/// Клиент регистрации и обновления точек T-Bank Split
+/// Клиент регистрации и обновления точек T-Bank Multisplit
 /// </summary>
-public sealed class TBankSplitShopsClient
+public sealed class TBankMultisplitClient
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
     private readonly HttpClient httpClient;
-    private readonly TBankSplitShopsClientOptions options;
+    private readonly TBankMultisplitClientOptions options;
     private readonly Uri baseAddress;
 
     /// <summary>
-    /// Создает клиент API регистрации точек T-Bank Split
+    /// Создает клиент API регистрации точек T-Bank Multisplit
     /// </summary>
-    public TBankSplitShopsClient(HttpClient httpClient, TBankSplitShopsClientOptions options)
+    public TBankMultisplitClient(HttpClient httpClient, TBankMultisplitClientOptions options)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
         ArgumentNullException.ThrowIfNull(options);
@@ -58,7 +58,7 @@ public sealed class TBankSplitShopsClient
     /// банку вместо одного, а <c>expires_in</c> разбирался и не использовался.
     /// </para>
     /// </remarks>
-    public async Task<TBankSplitShopsTokenResponse> GetAccessTokenAsync(CancellationToken cancellationToken = default)
+    public async Task<TBankMultisplitTokenResponse> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
         // Отсчёт от отправки, а не от разбора ответа: так оценка срока годности заведомо не длиннее
         // настоящей.
@@ -79,7 +79,7 @@ public sealed class TBankSplitShopsClient
             "Basic",
             Convert.ToBase64String(Encoding.ASCII.GetBytes("partner:partner")));
 
-        var token = await SendAsync<TBankSplitShopsTokenResponse>("oauth/token", request, cancellationToken)
+        var token = await SendAsync<TBankMultisplitTokenResponse>("oauth/token", request, cancellationToken)
             .ConfigureAwait(false);
 
         return token.ExpiresIn is { } expiresInSeconds
@@ -98,12 +98,12 @@ public sealed class TBankSplitShopsClient
     /// <param name="cancellationToken">Токен отмены.</param>
     public async Task<TBankShopMutationResponse> RegisterShopAsync(
         TBankRegisterShopRequest request,
-        TBankSplitShopsAccessToken accessToken,
+        TBankMultisplitAccessToken accessToken,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         EnsureAccessToken(accessToken);
-        TBankSplitShopsRequestValidator.Validate(request);
+        TBankMultisplitRequestValidator.Validate(request);
 
         using var httpRequest = CreateJsonRequest(HttpMethod.Post, "sm-register/register", request, accessToken);
 
@@ -119,12 +119,12 @@ public sealed class TBankSplitShopsClient
     /// <param name="cancellationToken">Токен отмены.</param>
     public async Task<TBankShopInfoResponse> GetShopAsync(
         string shopCode,
-        TBankSplitShopsAccessToken accessToken,
+        TBankMultisplitAccessToken accessToken,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(shopCode))
         {
-            throw new TBankSplitShopsValidationException("Shop code must be provided.");
+            throw new TBankMultisplitValidationException("Shop code must be provided.");
         }
 
         EnsureAccessToken(accessToken);
@@ -146,17 +146,17 @@ public sealed class TBankSplitShopsClient
     public async Task<TBankShopMutationResponse> UpdateShopAsync(
         string shopCode,
         TBankUpdateShopRequest request,
-        TBankSplitShopsAccessToken accessToken,
+        TBankMultisplitAccessToken accessToken,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(shopCode))
         {
-            throw new TBankSplitShopsValidationException("Shop code must be provided.");
+            throw new TBankMultisplitValidationException("Shop code must be provided.");
         }
 
         ArgumentNullException.ThrowIfNull(request);
         EnsureAccessToken(accessToken);
-        TBankSplitShopsRequestValidator.Validate(request);
+        TBankMultisplitRequestValidator.Validate(request);
 
         var path = $"sm-register/register/{Uri.EscapeDataString(shopCode)}";
         using var httpRequest = CreateJsonRequest(HttpMethod.Patch, path, request, accessToken);
@@ -168,7 +168,7 @@ public sealed class TBankSplitShopsClient
         HttpMethod method,
         string path,
         TRequest body,
-        TBankSplitShopsAccessToken accessToken)
+        TBankMultisplitAccessToken accessToken)
     {
         var request = new HttpRequestMessage(method, new Uri(baseAddress, path))
         {
@@ -180,11 +180,11 @@ public sealed class TBankSplitShopsClient
         return request;
     }
 
-    private static void EnsureAccessToken(TBankSplitShopsAccessToken accessToken)
+    private static void EnsureAccessToken(TBankMultisplitAccessToken accessToken)
     {
         if (string.IsNullOrWhiteSpace(accessToken.Value))
         {
-            throw new TBankSplitShopsValidationException(
+            throw new TBankMultisplitValidationException(
                 "An access token must be provided. Issue one with GetAccessTokenAsync.");
         }
     }
@@ -193,7 +193,7 @@ public sealed class TBankSplitShopsClient
         string operation,
         HttpRequestMessage request,
         CancellationToken cancellationToken)
-        where TResponse : ITBankSplitShopsResponse<TResponse>
+        where TResponse : ITBankMultisplitResponse<TResponse>
     {
         HttpResponseMessage response;
 
@@ -203,7 +203,7 @@ public sealed class TBankSplitShopsClient
         }
         catch (HttpRequestException exception)
         {
-            throw new TBankSplitShopsTransportException(
+            throw new TBankMultisplitTransportException(
                 $"T-Bank multisplit shops {operation} request failed before a response was received.",
                 exception);
         }
@@ -216,7 +216,7 @@ public sealed class TBankSplitShopsClient
             if (!response.IsSuccessStatusCode)
             {
                 var errorResponse = DeserializeError(operation, response.StatusCode, responseBody);
-                throw new TBankSplitShopsApiException(
+                throw new TBankMultisplitApiException(
                     $"T-Bank multisplit shops {operation} returned HTTP {(int)response.StatusCode} ({response.StatusCode}).",
                     response.StatusCode,
                     errorResponse,
@@ -235,7 +235,7 @@ public sealed class TBankSplitShopsClient
     {
         if (string.IsNullOrWhiteSpace(responseBody))
         {
-            throw new TBankSplitShopsProtocolException(
+            throw new TBankMultisplitProtocolException(
                 $"T-Bank multisplit shops {operation} response body was empty. HTTP {(int)statusCode} ({statusCode}).",
                 statusCode);
         }
@@ -243,7 +243,7 @@ public sealed class TBankSplitShopsClient
         try
         {
             return JsonSerializer.Deserialize<TResponse>(responseBody, JsonOptions)
-                ?? throw new TBankSplitShopsProtocolException(
+                ?? throw new TBankMultisplitProtocolException(
                     $"T-Bank multisplit shops {operation} response body was empty after deserialization.",
                     statusCode,
                     CreateBodyPreview(responseBody));
@@ -251,7 +251,7 @@ public sealed class TBankSplitShopsClient
         catch (JsonException exception)
         {
             var responseBodyPreview = CreateBodyPreview(responseBody);
-            throw new TBankSplitShopsProtocolException(
+            throw new TBankMultisplitProtocolException(
                 $"T-Bank multisplit shops {operation} response body was not valid JSON for the expected response model. HTTP {(int)statusCode} ({statusCode}). Response preview: {responseBodyPreview}",
                 statusCode,
                 responseBodyPreview,
@@ -259,7 +259,7 @@ public sealed class TBankSplitShopsClient
         }
     }
 
-    private static TBankSplitShopsErrorResponse? DeserializeError(
+    private static TBankMultisplitErrorResponse? DeserializeError(
         string operation,
         HttpStatusCode statusCode,
         string responseBody)
@@ -271,11 +271,11 @@ public sealed class TBankSplitShopsClient
 
         try
         {
-            return JsonSerializer.Deserialize<TBankSplitShopsErrorResponse>(responseBody, JsonOptions);
+            return JsonSerializer.Deserialize<TBankMultisplitErrorResponse>(responseBody, JsonOptions);
         }
         catch (JsonException exception)
         {
-            throw new TBankSplitShopsProtocolException(
+            throw new TBankMultisplitProtocolException(
                 $"T-Bank multisplit shops {operation} error response body was not valid JSON. HTTP {(int)statusCode} ({statusCode}). Response preview: {CreateBodyPreview(responseBody)}",
                 statusCode,
                 CreateBodyPreview(responseBody),
@@ -283,7 +283,7 @@ public sealed class TBankSplitShopsClient
         }
     }
 
-    private static TBankSplitShopsResponseMetadata CreateResponseMetadata(
+    private static TBankMultisplitResponseMetadata CreateResponseMetadata(
         HttpResponseMessage response,
         string responseBody,
         bool captureRawResponseBody)
@@ -296,7 +296,7 @@ public sealed class TBankSplitShopsClient
                 static group => (IReadOnlyList<string>)group.SelectMany(static header => header.Value).ToArray(),
                 StringComparer.OrdinalIgnoreCase);
 
-        return new TBankSplitShopsResponseMetadata(
+        return new TBankMultisplitResponseMetadata(
             response.StatusCode,
             headers,
             captureRawResponseBody ? responseBody : null);
@@ -326,7 +326,7 @@ public sealed class TBankSplitShopsClient
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
-        jsonOptions.Converters.Add(new TBankSplitShopStringJsonConverter());
+        jsonOptions.Converters.Add(new TBankMultisplitStringJsonConverter());
 
         return jsonOptions;
     }

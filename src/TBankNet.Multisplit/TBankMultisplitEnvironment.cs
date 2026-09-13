@@ -1,9 +1,9 @@
-namespace TBankAcquiringNet.SplitShops;
+namespace TBankNet.Multisplit;
 
 /// <summary>
-/// Среда API регистрации точек T-Bank Split
+/// Среда API регистрации точек T-Bank Multisplit
 /// </summary>
-public enum TBankSplitShopsEnvironment
+public enum TBankMultisplitEnvironment
 {
     /// <summary>Тестовая среда acqapi-test.tinkoff.ru.</summary>
     Test,

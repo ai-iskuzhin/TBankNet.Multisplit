@@ -1,9 +1,9 @@
-namespace TBankAcquiringNet.SplitShops;
+namespace TBankNet.Multisplit;
 
 /// <summary>
 /// Настройки клиента регистрации точек T-Bank Multisplit
 /// </summary>
-public sealed class TBankSplitShopsClientOptions
+public sealed class TBankMultisplitClientOptions
 {
     /// <summary>Логин партнера, выданный банком для OAuth-запроса.</summary>
     public required string Username { get; init; }
@@ -18,7 +18,7 @@ public sealed class TBankSplitShopsClientOptions
     /// Без значения по умолчанию намеренно: умолчание <c>Production</c> означало, что забытая
     /// настройка молча регистрирует настоящие точки в боевом контуре.
     /// </remarks>
-    public TBankSplitShopsEnvironment? Environment { get; init; }
+    public TBankMultisplitEnvironment? Environment { get; init; }
 
     /// <summary>
     /// Явный базовый URL API. Задаётся вместо <see cref="Environment"/>, но не вместе с ним.
@@ -53,8 +53,8 @@ public sealed class TBankSplitShopsClientOptions
 
         return Environment switch
         {
-            TBankSplitShopsEnvironment.Test => new Uri("https://acqapi-test.tinkoff.ru/"),
-            TBankSplitShopsEnvironment.Production => new Uri("https://acqapi.tinkoff.ru/"),
+            TBankMultisplitEnvironment.Test => new Uri("https://acqapi-test.tinkoff.ru/"),
+            TBankMultisplitEnvironment.Production => new Uri("https://acqapi.tinkoff.ru/"),
             null => throw new ArgumentException(
                 "Set either Environment or BaseAddress: the API host is never assumed.",
                 nameof(Environment)),

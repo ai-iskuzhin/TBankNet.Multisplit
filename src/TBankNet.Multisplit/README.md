@@ -1,16 +1,16 @@
-# TBankAcquiringNet.SplitShops
+# TBankNet.Multisplit
 
 .NET SDK package for T-Bank Multisplit provider shop registration and updates.
 
 ## Install
 
 ```bash
-dotnet add package TBankAcquiringNet.SplitShops --prerelease
+dotnet add package TBankNet.Multisplit --prerelease
 ```
 
 ## Supported API
 
-`TBankAcquiringNet.SplitShops` currently includes typed support for:
+`TBankNet.Multisplit` currently includes typed support for:
 
 - OAuth token acquisition via `/oauth/token`
 - provider shop registration via `POST /sm-register/register`
@@ -21,15 +21,15 @@ dotnet add package TBankAcquiringNet.SplitShops --prerelease
 ## Quick Start
 
 ```csharp
-using TBankAcquiringNet.SplitShops;
+using TBankNet.Multisplit;
 
 using var httpClient = new HttpClient();
 
-var client = new TBankSplitShopsClient(httpClient, new TBankSplitShopsClientOptions
+var client = new TBankMultisplitClient(httpClient, new TBankMultisplitClientOptions
 {
     Username = "login-from-bank",
     Password = "...",
-    Environment = TBankSplitShopsEnvironment.Test
+    Environment = TBankMultisplitEnvironment.Test
 });
 
 // The SDK issues tokens; it does not hold them. Cache and refresh where you know how many
@@ -50,9 +50,9 @@ Set exactly one of `Environment` or `BaseAddress` — they name the same thing, 
 token you pass it, so one token serves many calls and the refresh policy stays yours:
 
 ```csharp
-private TBankSplitShopsAccessToken cached;
+private TBankMultisplitAccessToken cached;
 
-private async Task<TBankSplitShopsAccessToken> GetTokenAsync(CancellationToken ct)
+private async Task<TBankMultisplitAccessToken> GetTokenAsync(CancellationToken ct)
 {
     if (cached.IsExpired())
     {
@@ -95,7 +95,7 @@ The client performs conservative local validation for required fields and sends 
 
 ## Error Handling
 
-Non-success HTTP responses are thrown as `TBankSplitShopsApiException` with typed `TBankSplitShopsErrorResponse` data when the response body can be parsed.
+Non-success HTTP responses are thrown as `TBankMultisplitApiException` with typed `TBankMultisplitErrorResponse` data when the response body can be parsed.
 
 Transport, protocol, and local validation failures are thrown as SDK exceptions.
 

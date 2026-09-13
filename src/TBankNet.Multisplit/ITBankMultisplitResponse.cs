@@ -1,4 +1,4 @@
-namespace TBankAcquiringNet.SplitShops;
+namespace TBankNet.Multisplit;
 
 /// <summary>
 /// Ответ, к которому клиент прикрепляет HTTP-метаданные.
@@ -10,9 +10,9 @@ namespace TBankAcquiringNet.SplitShops;
 /// непроверяемым приведением <c>(TResponse)(object)</c> — терял метаданные молча.
 /// </remarks>
 /// <typeparam name="TSelf">Тип, реализующий интерфейс.</typeparam>
-internal interface ITBankSplitShopsResponse<out TSelf>
-    where TSelf : ITBankSplitShopsResponse<TSelf>
+internal interface ITBankMultisplitResponse<out TSelf>
+    where TSelf : ITBankMultisplitResponse<TSelf>
 {
     /// <summary>Возвращает копию ответа с прикреплёнными метаданными.</summary>
-    TSelf WithMetadata(TBankSplitShopsResponseMetadata metadata);
+    TSelf WithMetadata(TBankMultisplitResponseMetadata metadata);
 }

@@ -4,7 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>.NET SDK for T-Bank split shop registration flows.</Description>
+    <PackageId>TBankNet.Multisplit</PackageId>
+    <Description>.NET SDK for T-Bank Multisplit shop registration and updates.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
