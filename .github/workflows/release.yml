@@ -55,7 +55,14 @@ jobs:
             args+=(--prerelease)
           fi
 
-          gh release create "$TAG_NAME" "${args[@]}"
+          # Idempotent on purpose: when a publish fails, the fix is to re-run this workflow, and it
+          # must not die on the release it created the first time round.
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release $TAG_NAME already exists; refreshing its assets."
+            gh release upload "$TAG_NAME" artifacts/packages/* --clobber
+          else
+            gh release create "$TAG_NAME" "${args[@]}"
+          fi
 
       # NuGet Trusted Publishing: exchanges the GitHub OIDC token for a short-lived
       # NuGet.org API key. Requires a trusted publishing policy configured on NuGet.org
