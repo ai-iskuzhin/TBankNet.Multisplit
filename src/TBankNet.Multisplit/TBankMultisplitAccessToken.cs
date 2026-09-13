@@ -32,6 +32,14 @@ public readonly record struct TBankMultisplitAccessToken(string Value, DateTimeO
     /// <param name="leeway">Запас, по умолчанию минута.</param>
     public bool IsExpired(TimeSpan? leeway = null)
     {
+        // Токена нет вовсе — не тот случай, когда «срок не сообщили». default(T) даёт пустое
+        // значение и пустой срок, и раньше такой токен отвечал «не истёк»: вызывающая сторона
+        // пропускала выпуск и отправляла пустой bearer.
+        if (!HasValue)
+        {
+            return true;
+        }
+
         if (ExpiresAt is not { } expiresAt)
         {
             return false;
@@ -39,6 +47,9 @@ public readonly record struct TBankMultisplitAccessToken(string Value, DateTimeO
 
         return DateTimeOffset.UtcNow + (leeway ?? TimeSpan.FromMinutes(1)) >= expiresAt;
     }
+
+    /// <summary>Есть ли вообще значение, которое можно отправить.</summary>
+    public bool HasValue => !string.IsNullOrWhiteSpace(Value);
 
     /// <inheritdoc />
     public override string ToString() => "TBankMultisplitAccessToken(***)";

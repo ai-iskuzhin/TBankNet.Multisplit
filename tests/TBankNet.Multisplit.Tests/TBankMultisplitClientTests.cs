@@ -305,6 +305,27 @@ public sealed class TBankMultisplitClientTests
     }
 
     [Fact]
+    public void AccessToken_Default_IsExpiredSoItIsNeverSent()
+    {
+        TBankMultisplitAccessToken unset = default;
+
+        // A token that was never fetched must not read as usable. It previously answered "not
+        // expired" — no value, no expiry — so a caching caller skipped the fetch and sent an
+        // empty bearer.
+        Assert.True(unset.IsExpired());
+        Assert.False(unset.HasValue);
+    }
+
+    [Fact]
+    public void AccessToken_WithValueButNoExpiry_IsUsable()
+    {
+        var token = new TBankMultisplitAccessToken("access-token");
+
+        Assert.True(token.HasValue);
+        Assert.False(token.IsExpired());
+    }
+
+    [Fact]
     public void AccessToken_ToString_DoesNotLeakTheValue()
     {
         var token = new TBankMultisplitAccessToken("super-secret");
