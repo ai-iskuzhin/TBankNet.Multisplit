@@ -85,8 +85,8 @@ Otherwise extend trust on the `HttpClient` you pass to the client — keep the s
 add the Минцифры root only as a fallback anchor, so a hostname mismatch or an expired certificate is
 still rejected. The repository README has a full example.
 
-The GOST certificates from the same distribution are of no use here: .NET verifies neither
-GOST R 34.10-2012 signatures nor GOST TLS cipher suites. Use the RSA chain.
+Only the RSA chain is usable: .NET verifies neither GOST R 34.10-2012 signatures nor GOST TLS
+cipher suites on any platform.
 
 Production access to `acqapi.tinkoff.ru` may also require an mTLS client certificate and IP
 allow-listing according to T-Bank registration API requirements.

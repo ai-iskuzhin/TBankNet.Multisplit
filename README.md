@@ -141,12 +141,20 @@ handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, chain,
 using var httpClient = new HttpClient(handler);
 ```
 
-ГОСТ-сертификаты Минцифры для этого не годятся: .NET не проверяет подписи ГОСТ Р 34.10-2012 и не
-поддерживает ГОСТ-шифронаборы TLS. Нужна RSA-цепочка.
+Используется только RSA-цепочка: .NET не проверяет подписи ГОСТ Р 34.10-2012 и не поддерживает
+ГОСТ-шифронаборы TLS ни на одной платформе, поэтому ГОСТ-сертификаты из того же дистрибутива здесь
+бесполезны.
 
 Боевой доступ к `acqapi.tinkoff.ru` дополнительно может требовать клиентского mTLS-сертификата и
-включения IP в список разрешённых — см.
-[samples/TBankNet.Multisplit.MtlsExample](samples/TBankNet.Multisplit.MtlsExample).
+включения IP в список разрешённых. Сертификат настраивается на `HttpClient`, который вы передаёте
+клиенту:
+
+```csharp
+var clientCertificate = X509Certificate2.CreateFromPemFile("client.pem", "client.key");
+
+var handler = new SocketsHttpHandler();
+handler.SslOptions.ClientCertificates = new X509Certificate2Collection(clientCertificate);
+```
 
 ## Обработка ошибок
 

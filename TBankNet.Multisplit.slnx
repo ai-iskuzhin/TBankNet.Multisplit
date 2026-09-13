@@ -1,7 +1,4 @@
 <Solution>
-  <Folder Name="/samples/">
-    <Project Path="samples/TBankNet.Multisplit.MtlsExample/TBankNet.Multisplit.MtlsExample.csproj" />
-  </Folder>
   <Folder Name="/src/">
     <Project Path="src/TBankNet.Multisplit/TBankNet.Multisplit.csproj" />
   </Folder>
