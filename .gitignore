@@ -483,3 +483,17 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Secrets and credential material.
+# .env was already ignored; .env.example was not, and shipped real partner
+# credentials to a public repository because "example" files are meant to be
+# committed. Nothing named .env* is committable here, redacted or not.
+.env*
+
+# Certificates and private keys. mTLS material must never reach the repository.
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
