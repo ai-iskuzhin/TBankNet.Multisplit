@@ -4,6 +4,14 @@ on:
   push:
     tags:
       - 'v*'
+  # A tag push is the normal trigger, but a release that failed after the tag existed can only be
+  # retried by hand — re-running the original run replays the workflow file as it was at that tag.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release, for example v0.3.0-preview.2'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -17,6 +25,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -42,7 +53,7 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ inputs.tag || github.ref_name }}
         run: |
           args=(
             artifacts/packages/*
