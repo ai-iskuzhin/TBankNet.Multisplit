@@ -8,10 +8,15 @@
     <Description>.NET SDK for T-Bank Multisplit shop registration and updates.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon Condition="Exists('../../assets/icon.png')">icon.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('../../assets/icon.png')">
+    <None Include="../../assets/icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>

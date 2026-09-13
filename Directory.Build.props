@@ -6,7 +6,7 @@
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <Version>0.2.0-preview.3</Version>
-    <Authors>TBankAcquiringNet contributors</Authors>
+    <Authors>TBankNet.Multisplit contributors</Authors>
     <PackageProjectUrl>https://github.com/ai-iskuzhin/TBankNet.Multisplit</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ai-iskuzhin/TBankNet.Multisplit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

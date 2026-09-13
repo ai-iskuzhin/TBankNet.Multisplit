@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="22.608 65.994 240 240" width="240px" height="240px">
+  <rect x="22.608" y="65.994" width="240" height="240" style="stroke-width: 1;" fill="#FFDD2D"/>
+  <path d="M 22.608 66.545 L 262.608 66.545 L 262.608 198.617 C 223.737 113.326 126.715 59.935 22.608 66.545 Z" opacity="0.06" style="stroke: none; color: rgb(0, 0, 0); stroke-width: 1; stroke-linecap: butt; stroke-linejoin: miter; opacity: 0.06; font-family: &quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif; font-size: 16px; font-weight: 400; text-anchor: start; dominant-baseline: auto; fill: rgb(255, 25, 25);"/>
+  <g transform="matrix(10, 0, 0, 10, -2.3923110961914062, 14.351080894470215)" style="">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M8 11V15.5077C8.6164 14.8116 9.73715 14.3406 11.0186 14.3406H12.4111V19.5807C12.4111 20.9748 12.0323 22.3399 11.4703 23.0111H17.5276C16.9668 22.3392 16.5889 20.9758 16.5889 19.5834V14.3406H17.9815C19.2629 14.3406 20.3836 14.8116 21 15.5077V11H8Z" fill="#333333" style=""/>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 175.52047729492188, 216.10980224609375)" style="">
+    <circle cx="34" cy="34" r="40" fill="#ffffff"/>
+    <circle cx="34" cy="34" r="36" fill="#5c2d91"/>
+    <g transform="translate(34 34) scale(1.05) translate(-32 -32)" fill="#ffffff">
+      <path d="M27.27,41H24.65L15.28,26.46a6.06,6.06,0,0,1-.58-1.14h-.08a18.71,18.71,0,0,1,.1,2.5V41H12.59V22.77h2.77l9.12,14.28q.57.89.74,1.22h.05a19.29,19.29,0,0,1-.13-2.68V22.77h2.13Z"/>
+      <path d="M41.69,41H32V22.77h9.24V24.7H34.18v6.06h6.58v1.92H34.18V39h7.52Z"/>
+      <path d="M56,24.7H50.7V41H48.57V24.7H43.33V22.77H56Z"/>
+      <circle cx="7.4" cy="39.85" r="1.45"/>
+    </g>
+  </g>
+</svg>
